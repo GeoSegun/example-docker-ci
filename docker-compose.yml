@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/seenode/example-docker-ci:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_OWNER:-seenode}/example-docker-ci:${IMAGE_TAG:-latest}
     ports:
       - "8000:8000"
     environment:

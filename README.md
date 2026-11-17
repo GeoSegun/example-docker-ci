@@ -52,7 +52,7 @@ The `deploy` job is skipped unless you enable it.
    - `VPS_USER`
    - `VPS_SSH_KEY` (the private key)
    - `GHCR_READ_TOKEN` (a PAT with `read:packages`, or empty for a public package)
-3. Clone this repository on the server at `/opt/example-api`, or change the `cd` path in `.github/workflows/docker-ci.yml`.
+3. Clone this repository on the server at `/opt/example-api`, or change the `cd` path in `.github/workflows/docker-ci.yml`. The workflow passes `IMAGE_OWNER` from the repository owner, so a fork pulls its own image; the compose file falls back to `seenode` for a manual run.
 4. Make sure the server user can run `docker compose` without a password prompt.
 
 The deploy job runs:
