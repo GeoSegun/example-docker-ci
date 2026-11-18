@@ -52,8 +52,7 @@ The `linux/amd64` flag matters on Apple Silicon. Without it, Docker builds an `a
 
 After the first successful workflow run, the package appears under the repository owner's **Packages** tab.
 
-- **Private package:** the VPS or Seenode needs a GitHub PAT with `read:packages`.
-- **Public package:** open the package settings and change visibility to public. No registry login is needed on the server.
+New packages default to private, which means an external VPS or Seenode needs a GitHub PAT with `read:packages` to pull the image. (Inside this repository's own workflow, the `deploy` job falls back to `GITHUB_TOKEN`.) If the image does not need to be private, open the package settings on GitHub and change its visibility to public so your server can pull without logging in.
 
 ## Optional: deploy to a VPS
 
