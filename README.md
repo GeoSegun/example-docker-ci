@@ -19,6 +19,19 @@ On every push to `main`, pull request, or `v*` tag, the workflow:
 
 The build and push job uses the built-in `GITHUB_TOKEN`; no personal access token is needed for GHCR.
 
+## What the pipeline looks like
+
+![GitHub Actions run with build-and-push and deploy jobs](docs/screenshots/actions-run.png)
+
+![Build and push job steps](docs/screenshots/actions-build.png)
+
+![Deploy over SSH job steps](docs/screenshots/actions-deploy.png)
+
+After the deploy job finishes, the new container answers with the updated version:
+
+![Live response from the deployed container](docs/screenshots/live-response.png)
+
+
 ## Run it locally
 
 ```bash
