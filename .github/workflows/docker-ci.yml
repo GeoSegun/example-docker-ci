@@ -75,6 +75,9 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      packages: read
     concurrency:
       group: production
       cancel-in-progress: false
@@ -86,7 +89,7 @@ jobs:
           IMAGE_TAG: sha-${{ github.sha }}
           IMAGE_OWNER: ${{ github.repository_owner }}
           GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}

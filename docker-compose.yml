@@ -2,7 +2,7 @@ services:
   api:
     image: ghcr.io/${IMAGE_OWNER:-geosegun}/example-docker-ci:${IMAGE_TAG:-latest}
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       APP_ENV: production
     restart: unless-stopped

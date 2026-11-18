@@ -51,7 +51,7 @@ The `deploy` job is skipped unless you enable it.
    - `VPS_HOST`
    - `VPS_USER`
    - `VPS_SSH_KEY` (the private key)
-   - `GHCR_READ_TOKEN` (a PAT with `read:packages`, or empty for a public package)
+   - `GHCR_READ_TOKEN` (a PAT with `read:packages`, or leave it unset to use the workflow `GITHUB_TOKEN` for this same repo's package)
 3. Clone this repository on the server at `/opt/example-api`, or change the `cd` path in `.github/workflows/docker-ci.yml`. The workflow passes `IMAGE_OWNER` from the repository owner, so a fork pulls its own image; the compose file falls back to `geosegun` for a manual run. The workflow lowercases `IMAGE_OWNER` because Docker image names cannot contain uppercase letters.
 4. Make sure the server user can run `docker compose` without a password prompt.
 
@@ -62,7 +62,7 @@ docker compose pull
 docker compose up -d --remove-orphans
 ```
 
-The compose file uses the `IMAGE_TAG` passed by the workflow, so each deploy pins the exact `sha-<commit>` image. To roll back, run the same commands with an older `IMAGE_TAG`.
+The compose file maps host port `8080` to container port `8000` and uses the `IMAGE_TAG` passed by the workflow, so each deploy pins the exact `sha-<commit>` image. To roll back, run the same commands with an older `IMAGE_TAG`.
 
 ## Deploy the image on Seenode
 
