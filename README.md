@@ -1,108 +1,41 @@
 # Example: Docker CI/CD with GitHub Actions
 
-A minimal FastAPI app that is tested, built, and pushed to GitHub Container Registry (GHCR) by GitHub Actions, with an optional SSH deploy to a Linux server running Docker Compose.
+A minimal FastAPI app that GitHub Actions tests, builds, and pushes to GitHub Container Registry, with an optional SSH deploy to a Linux server running Docker Compose.
 
-This repository accompanies the Seenode guide **How to Build, Push, and Deploy Docker Images With GitHub Actions**.
+Companion repo for the Seenode guide **How to Build, Push, and Deploy Docker Images With GitHub Actions**.
 
-## What the workflow does
+## Pipeline
 
 On every push to `main`, pull request, or `v*` tag, the workflow:
 
-1. Installs the Python dependencies and runs the tests.
-2. Builds a `linux/amd64` Docker image.
-3. Pushes the image to `ghcr.io/<owner>/<repo>` with:
-   - `main` for the main branch
-   - `pr-<number>` for pull requests
-   - `1.2.3` and `1.2` for `v1.2.3` tags
-   - `sha-<full-commit>` for every build
-4. Optionally deploys the new SHA tag to a VPS over SSH.
+1. Runs `python -m pytest -q`.
+2. Builds a `linux/amd64` image.
+3. Pushes it to `ghcr.io/<owner>/<repo>` with branch, PR, semver, and `sha-<commit>` tags.
+4. On `main`, deploys the SHA tag over SSH when `ENABLE_VPS_DEPLOY=true`.
 
-The build and push job uses the built-in `GITHUB_TOKEN`; no personal access token is needed for GHCR.
+The build job uses the built-in `GITHUB_TOKEN`, so no PAT is needed to push.
 
-## What the pipeline looks like
+![Run summary](docs/screenshots/actions-run.png)
 
-![GitHub Actions run with build-and-push and deploy jobs](docs/screenshots/actions-run.png)
-
-![Build and push job steps](docs/screenshots/actions-build.png)
-
-![Deploy over SSH job steps](docs/screenshots/actions-deploy.png)
-
-After the deploy job finishes, the new container answers with the updated version:
-
-![Live response from the deployed container](docs/screenshots/live-response.png)
-
-
-## Run it locally
+## Run locally
 
 ```bash
 docker build --platform linux/amd64 -t example-docker-ci:local .
 docker run --rm -p 8000:8000 example-docker-ci:local
-```
-
-In another terminal:
-
-```bash
 curl http://localhost:8000/health
-# {"status":"ok"}
 ```
 
-The `linux/amd64` flag matters on Apple Silicon. Without it, Docker builds an `arm64` image that will not run on most VPS hosts or on Seenode.
+## Deploy to a VPS (optional)
 
-## GitHub Container Registry
+1. Create the repository variable `ENABLE_VPS_DEPLOY` with value `true`.
+2. Add repository secrets `VPS_HOST`, `VPS_USER`, and `VPS_SSH_KEY`. Add `GHCR_READ_TOKEN` only if the package lives in another repository; same-repo deploys fall back to `GITHUB_TOKEN`.
+3. Copy `docker-compose.yml` to `/opt/example-api` on the server, or change the `cd` path in the workflow.
+4. Make sure `VPS_USER` can run `docker compose` without `sudo`.
 
-After the first successful workflow run, the package appears under the repository owner's **Packages** tab.
+The compose file maps host port `8080` to container port `8000` and pins `IMAGE_TAG`. To roll back, rerun with an older SHA.
 
-New packages default to private, which means an external VPS or Seenode needs a GitHub PAT with `read:packages` to pull the image. (Inside this repository's own workflow, the `deploy` job falls back to `GITHUB_TOKEN`.) If the image does not need to be private, open the package settings on GitHub and change its visibility to public so your server can pull without logging in.
+## Registry and Seenode notes
 
-## Optional: deploy to a VPS
+Packages are private by default. An external server or Seenode needs a `read:packages` PAT; make the package public to skip credentials.
 
-The `deploy` job is skipped unless you enable it.
-
-1. Create a repository variable `ENABLE_VPS_DEPLOY` with the value `true`.
-2. Add these repository secrets:
-   - `VPS_HOST`
-   - `VPS_USER`
-   - `VPS_SSH_KEY` (the private key)
-   - `GHCR_READ_TOKEN` (a PAT with `read:packages`, or leave it unset to use the workflow `GITHUB_TOKEN` for this same repo's package)
-3. Clone this repository on the server at `/opt/example-api`, or change the `cd` path in `.github/workflows/docker-ci.yml`. The workflow passes `IMAGE_OWNER` from the repository owner, so a fork pulls its own image; the compose file falls back to `geosegun` for a manual run. The workflow lowercases `IMAGE_OWNER` because Docker image names cannot contain uppercase letters.
-4. Make sure the server user can run `docker compose` without a password prompt.
-
-The deploy job runs:
-
-```bash
-docker compose pull
-docker compose up -d --remove-orphans
-```
-
-The compose file maps host port `8080` to container port `8000` and uses the `IMAGE_TAG` passed by the workflow, so each deploy pins the exact `sha-<commit>` image. To roll back, run the same commands with an older `IMAGE_TAG`.
-
-## Deploy the image on Seenode
-
-You can run the same GHCR image on [Seenode](https://seenode.com) without managing a server.
-
-1. Create a new application and choose **Docker image** as the source.
-2. Enter `ghcr.io/geosegun/example-docker-ci` (or your fork's path).
-3. For a private package, add a **Pull credential** using a GitHub username and a PAT with `read:packages`.
-4. Choose an image tag, set the container port to `8000`, and create the app.
-
-Seenode image-backed apps do not auto-deploy when you push a new image. After the workflow pushes a new tag, open the app, select the tag, and start a deploy. Immutable `sha-<commit>` tags make rollbacks predictable.
-
-See the Seenode docs for [deploying from a Docker image](https://seenode.com/docs/services/docker-image) and [container registry credentials](https://seenode.com/docs/configure/container-registry-credentials).
-
-## Tags and rollbacks
-
-Use the `sha-<commit>` tag for production deploys. It points to exactly one image and can be traced back to a commit.
-
-`latest` is fine for a demo, but two deploys of `latest` can point at different images. Prefer a SHA or a release tag when you need a reliable rollback.
-
-## Project layout
-
-```text
-.
-├── .github/workflows/docker-ci.yml
-├── Dockerfile
-├── docker-compose.yml
-├── main.py
-├── requirements.txt
-└── tests/test_main.py
-```
+To run the image on [Seenode](https://seenode.com), create an app, choose **Docker image**, enter `ghcr.io/geosegun/example-docker-ci`, and set the port to `8000`. Image-backed apps do not redeploy on push; select the new tag and deploy. See the [Docker image docs](https://seenode.com/docs/services/docker-image) and [registry credentials](https://seenode.com/docs/configure/container-registry-credentials).
