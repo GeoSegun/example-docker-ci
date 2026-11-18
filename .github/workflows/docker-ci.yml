@@ -99,6 +99,7 @@ jobs:
             cd /opt/example-api
             export IMAGE_TAG
             export IMAGE_OWNER
+            IMAGE_OWNER=$(echo "$IMAGE_OWNER" | tr "[:upper:]" "[:lower:]")
             docker compose pull
             docker compose up -d --remove-orphans
             docker image prune -f
