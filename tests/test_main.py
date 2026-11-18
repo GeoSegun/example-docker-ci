@@ -8,7 +8,7 @@ client = TestClient(app)
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json()["message"] == "Hello from a Docker image"
+    assert response.json()["message"] == "Hello from a Docker image, version 2"
 
 
 def test_health():
